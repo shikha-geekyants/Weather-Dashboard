@@ -116,20 +116,34 @@ class WeatherViewModel @Inject constructor(
         _uiState.update { it.copy(showSearchScreen = false) }
     }
 
-    suspend fun searchCities(query: String): List<com.weather.dashboard.domain.model.WeatherData> {
-        if (query.length < 2) return emptyList()
-        if (!networkMonitor.checkCurrentConnectivity()) return emptyList()
+    suspend fun searchCities(query: String): Result<List<com.weather.dashboard.domain.model.WeatherData>> {
+        if (query.length < 2) return Result.success(emptyList())
+        if (!networkMonitor.checkCurrentConnectivity()) {
+            return Result.failure(
+                WeatherError.NetworkError("No internet connection available")
+            )
+        }
 
         return try {
             // Try to get weather for the city to verify it exists and get weather data
             val result = weatherRepository.getWeather(query)
             if (result.isSuccess) {
-                result.getOrNull()?.let { listOf(it) } ?: emptyList()
+                val weatherData = result.getOrNull()
+                if (weatherData != null) {
+                    Result.success(listOf(weatherData))
+                } else {
+                    Result.success(emptyList())
+                }
             } else {
-                emptyList()
+                Result.success(emptyList())
             }
         } catch (e: Exception) {
-            emptyList()
+            Result.failure(
+                WeatherError.NetworkError(
+                    message = e.message ?: "Error searching for city",
+                    cause = e
+                )
+            )
         }
     }
 

@@ -11,30 +11,44 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.weather.dashboard.R
 import com.weather.dashboard.domain.model.WeatherData
 import com.weather.dashboard.ui.components.WeatherCard
 import kotlinx.coroutines.delay
+
+private sealed class SearchErrorType {
+    data class NoCitiesFound(val query: String) : SearchErrorType()
+    data class SearchError(val message: String) : SearchErrorType()
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CitySearchScreen(
     onBackClick: () -> Unit,
     onCitySelected: (String) -> Unit,
-    searchCities: suspend (String) -> List<WeatherData>,
+    searchCities: suspend (String) -> Result<List<WeatherData>>,
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<WeatherData>>(emptyList()) }
     var isSearching by remember { mutableStateOf(false) }
-    var searchError by remember { mutableStateOf<String?>(null) }
+    var searchErrorType by remember { mutableStateOf<SearchErrorType?>(null) }
+
+    // Format error message in composable context
+    val searchError = when (val error = searchErrorType) {
+        is SearchErrorType.NoCitiesFound -> stringResource(R.string.no_cities_found, error.query)
+        is SearchErrorType.SearchError -> stringResource(R.string.error_searching, error.message)
+        null -> null
+    }
 
     // Debounce search
     LaunchedEffect(searchQuery) {
         if (searchQuery.isBlank()) {
             searchResults = emptyList()
-            searchError = null
+            searchErrorType = null
             return@LaunchedEffect
         }
 
@@ -45,31 +59,38 @@ fun CitySearchScreen(
 
         delay(1000) // Wait 1 second after user stops typing to avoid too frequent API calls
         isSearching = true
-        searchError = null
+        searchErrorType = null
 
-        try {
-            val results = searchCities(searchQuery)
-            searchResults = results
-            if (results.isEmpty()) {
-                searchError = "No cities found for \"$searchQuery\""
+        val result = searchCities(searchQuery)
+        result.fold(
+            onSuccess = { results ->
+                searchResults = results
+                if (results.isEmpty()) {
+                    searchErrorType = SearchErrorType.NoCitiesFound(searchQuery)
+                }
+            },
+            onFailure = { error ->
+                val errorMessage = if (error is com.weather.dashboard.domain.model.WeatherError) {
+                    error.message ?: "Unknown error"
+                } else {
+                    error.message ?: "Unknown error"
+                }
+                searchErrorType = SearchErrorType.SearchError(errorMessage)
+                searchResults = emptyList()
             }
-        } catch (e: Exception) {
-            searchError = "Error searching: ${e.message}"
-            searchResults = emptyList()
-        } finally {
-            isSearching = false
-        }
+        )
+        isSearching = false
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Search City") },
+                title = { Text(stringResource(R.string.search_city)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.back)
                         )
                     }
                 }
@@ -88,11 +109,11 @@ fun CitySearchScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                placeholder = { Text("Enter city name...") },
+                placeholder = { Text(stringResource(R.string.enter_city_name)) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = "Search"
+                        contentDescription = stringResource(R.string.search)
                     )
                 },
                 singleLine = true,
@@ -163,12 +184,12 @@ fun CitySearchScreen(
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                         Text(
-                            text = "Search for a city",
+                            text = stringResource(R.string.search_for_city),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                         Text(
-                            text = "Enter at least 2 characters to search",
+                            text = stringResource(R.string.enter_at_least_2_characters),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                         )

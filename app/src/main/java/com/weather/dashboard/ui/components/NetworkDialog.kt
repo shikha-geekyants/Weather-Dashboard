@@ -6,6 +6,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.weather.dashboard.R
 
 @Composable
 fun NetworkDialog(
@@ -16,19 +18,19 @@ fun NetworkDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("No Internet Connection")
+            Text(stringResource(R.string.no_internet_connection))
         },
         text = {
-            Text("Please check your internet connection and try again. Make sure Wi-Fi or mobile data is turned on.")
+            Text(stringResource(R.string.check_internet_connection))
         },
         confirmButton = {
             Button(onClick = onRetry) {
-                Text("Check Again")
+                Text(stringResource(R.string.check_again))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Dismiss")
+                Text(stringResource(R.string.dismiss))
             }
         },
         modifier = modifier

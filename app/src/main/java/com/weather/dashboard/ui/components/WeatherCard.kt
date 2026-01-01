@@ -9,8 +9,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.weather.dashboard.R
 import com.weather.dashboard.domain.model.WeatherData
 
 @Composable
@@ -58,11 +60,11 @@ fun WeatherCard(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 WeatherDetailItem(
-                    label = "Humidity",
+                    label = stringResource(R.string.humidity),
                     value = "${weatherData.humidity}%"
                 )
                 WeatherDetailItem(
-                    label = "Wind Speed",
+                    label = stringResource(R.string.wind_speed),
                     value = "${weatherData.windSpeed} m/s"
                 )
             }

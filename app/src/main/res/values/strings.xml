@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Weather Dashboard</string>
+    <string name="weather_dashboard">Weather Dashboard</string>
     <string name="temperature">Temperature</string>
     <string name="humidity">Humidity</string>
     <string name="wind_speed">Wind Speed</string>
@@ -9,6 +10,28 @@
     <string name="error_loading_weather">Error loading weather data</string>
     <string name="retry">Retry</string>
     <string name="refreshing">Refreshing…</string>
+    <string name="loading_weather_data">Loading weather data…</string>
     <string name="no_data">No weather data available</string>
+    <string name="no_data_available">No data available</string>
+    
+    <!-- Search Screen -->
+    <string name="search_city">Search City</string>
+    <string name="enter_city_name">Enter city name…</string>
+    <string name="search">Search</string>
+    <string name="back">Back</string>
+    <string name="search_for_city">Search for a city</string>
+    <string name="enter_at_least_2_characters">Enter at least 2 characters to search</string>
+    <string name="no_cities_found">No cities found for \"%1$s\"</string>
+    <string name="error_searching">Error searching: %1$s</string>
+    
+    <!-- Network Dialog -->
+    <string name="no_internet_connection">No Internet Connection</string>
+    <string name="check_internet_connection">Please check your internet connection and try again. Make sure Wi-Fi or mobile data is turned on.</string>
+    <string name="check_again">Check Again</string>
+    <string name="dismiss">Dismiss</string>
+    
+    <!-- Content Descriptions -->
+    <string name="search_city_desc">Search City</string>
+    <string name="refresh_desc">Refresh</string>
 </resources>
 

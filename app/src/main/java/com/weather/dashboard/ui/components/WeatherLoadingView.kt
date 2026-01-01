@@ -6,7 +6,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.weather.dashboard.R
 import com.weather.dashboard.ui.theme.WeatherDashboardTheme
 
 @Composable
@@ -22,7 +24,7 @@ fun WeatherLoadingView(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             CircularProgressIndicator()
-            Text("Loading weather data...")
+            Text(stringResource(R.string.loading_weather_data))
         }
     }
 }

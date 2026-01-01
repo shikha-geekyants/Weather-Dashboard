@@ -10,9 +10,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.weather.dashboard.R
 import com.weather.dashboard.domain.model.WeatherData
 import com.weather.dashboard.ui.components.CityTabs
 import com.weather.dashboard.ui.components.NetworkDialog
@@ -36,20 +38,20 @@ fun WeatherScreen(
     onCheckNetwork: () -> Unit,
     onShowSearch: () -> Unit,
     onHideSearch: () -> Unit,
-    searchCities: suspend (String) -> List<WeatherData>,
+    searchCities: suspend (String) -> Result<List<WeatherData>>,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Weather Dashboard") },
+                title = { Text(stringResource(R.string.weather_dashboard)) },
                 actions = {
                     IconButton(
                         onClick = onShowSearch
                     ) {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = "Search City"
+                            contentDescription = stringResource(R.string.search_city_desc)
                         )
                     }
                     IconButton(
@@ -64,7 +66,7 @@ fun WeatherScreen(
                         } else {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = "Refresh"
+                                contentDescription = stringResource(R.string.refresh_desc)
                             )
                         }
                     }
@@ -112,7 +114,7 @@ fun WeatherScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("No data available")
+                        Text(stringResource(R.string.no_data_available))
                     }
                 }
             }
@@ -164,7 +166,7 @@ fun WeatherContent(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Refreshing...",
+                    text = stringResource(R.string.refreshing),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -185,7 +187,7 @@ fun WeatherContent(
         // Last Updated
         lastUpdated?.let {
             Text(
-                text = "Last updated: ${formatTimestamp(it)}",
+                text = "${stringResource(R.string.last_updated)}: ${formatTimestamp(it)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center

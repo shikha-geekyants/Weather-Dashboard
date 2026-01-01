@@ -5,8 +5,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.weather.dashboard.R
 import com.weather.dashboard.domain.model.WeatherError
 
 @Composable
@@ -27,7 +29,7 @@ fun WeatherErrorView(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Error loading weather data",
+                text = stringResource(R.string.error_loading_weather),
                 style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center
             )
@@ -47,7 +49,7 @@ fun WeatherErrorView(
                 onClick = onRetry,
                 modifier = Modifier.padding(top = 8.dp)
             ) {
-                Text("Retry")
+                Text(stringResource(R.string.retry))
             }
         }
     }
