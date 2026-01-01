@@ -3,6 +3,8 @@ package com.weather.dashboard.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.weather.dashboard.data.repository.WeatherRepository
+import com.weather.dashboard.domain.model.LoadingType
+import com.weather.dashboard.domain.model.State
 import com.weather.dashboard.domain.model.WeatherError
 import com.weather.dashboard.ui.state.WeatherUiState
 import com.weather.dashboard.util.NetworkMonitor
@@ -13,6 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -126,16 +130,22 @@ class WeatherViewModel @Inject constructor(
 
         return try {
             // Try to get weather for the city to verify it exists and get weather data
-            val result = weatherRepository.getWeather(query)
-            if (result.isSuccess) {
-                val weatherData = result.getOrNull()
-                if (weatherData != null) {
-                    Result.success(listOf(weatherData))
-                } else {
+            val state = weatherRepository.getWeather(query)
+                .first { it is State.Success || it is State.Error }
+            
+            when (state) {
+                is State.Success -> {
+                    Result.success(listOf(state.data))
+                }
+                is State.Error -> {
                     Result.success(emptyList())
                 }
-            } else {
-                Result.success(emptyList())
+                is State.Loading -> {
+                    Result.success(emptyList())
+                }
+                is State.Idle -> {
+                    Result.success(emptyList())
+                }
             }
         } catch (e: Exception) {
             Result.failure(
@@ -170,38 +180,56 @@ class WeatherViewModel @Inject constructor(
                 )
             }
 
-            weatherRepository.getWeather(city)
-                .onSuccess { weatherData ->
-                    _uiState.update {
-                        it.copy(
-                            weatherData = weatherData,
-                            isLoading = false,
-                            isRefreshing = false,
-                            error = null,
-                            lastUpdated = System.currentTimeMillis(),
-                            isNetworkAvailable = true
+            weatherRepository.getWeather(city).collect { state ->
+                when (state) {
+                    is State.Loading -> {
+                        val isLoading = state.type == LoadingType.LOADER && !isManualRefresh
+                        val isRefreshing = state.type == LoadingType.REFRESH || isManualRefresh
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                isLoading = isLoading && currentState.weatherData == null,
+                                isRefreshing = isRefreshing,
+                                error = null
+                            )
+                        }
+                    }
+                    is State.Success -> {
+                        _uiState.update {
+                            it.copy(
+                                weatherData = state.data,
+                                isLoading = false,
+                                isRefreshing = false,
+                                error = null,
+                                lastUpdated = System.currentTimeMillis(),
+                                isNetworkAvailable = true
+                            )
+                        }
+                    }
+                    is State.Error -> {
+                        val isNetworkError = state.message.contains("internet", ignoreCase = true) ||
+                            state.message.contains("connection", ignoreCase = true) ||
+                            state.code == 0
+                        
+                        val weatherError = WeatherError.NetworkError(
+                            message = state.message,
+                            cause = null
                         )
+                        
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                isRefreshing = false,
+                                error = weatherError,
+                                showNetworkDialog = isNetworkError,
+                                isNetworkAvailable = !isNetworkError
+                            )
+                        }
+                    }
+                    is State.Idle -> {
+                        // Idle state - no action needed
                     }
                 }
-                .onFailure { error ->
-                    val isNetworkError = error is WeatherError.NetworkError && 
-                        (error.message?.contains("internet", ignoreCase = true) == true ||
-                         error.message?.contains("connection", ignoreCase = true) == true ||
-                         error.cause is java.net.UnknownHostException)
-                    
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            isRefreshing = false,
-                            error = if (error is WeatherError) error else WeatherError.UnknownError(
-                                error.message ?: "Unknown error occurred",
-                                error
-                            ),
-                            showNetworkDialog = isNetworkError,
-                            isNetworkAvailable = !isNetworkError
-                        )
-                    }
-                }
+            }
         }
     }
 
