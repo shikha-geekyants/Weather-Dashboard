@@ -39,7 +39,10 @@ class MainActivity : ComponentActivity() {
                         onRefresh = { viewModel.refreshWeather() },
                         onRetry = { viewModel.retry() },
                         onDismissNetworkDialog = { viewModel.dismissNetworkDialog() },
-                        onCheckNetwork = { viewModel.checkNetworkAndRetry() }
+                        onCheckNetwork = { viewModel.checkNetworkAndRetry() },
+                        onShowSearch = { viewModel.showSearchScreen() },
+                        onHideSearch = { viewModel.hideSearchScreen() },
+                        searchCities = { query -> viewModel.searchCities(query) }
                     )
                 }
             }

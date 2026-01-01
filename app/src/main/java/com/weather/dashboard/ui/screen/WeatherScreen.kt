@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -33,6 +34,9 @@ fun WeatherScreen(
     onRetry: () -> Unit,
     onDismissNetworkDialog: () -> Unit,
     onCheckNetwork: () -> Unit,
+    onShowSearch: () -> Unit,
+    onHideSearch: () -> Unit,
+    searchCities: suspend (String) -> List<WeatherData>,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -40,6 +44,14 @@ fun WeatherScreen(
             TopAppBar(
                 title = { Text("Weather Dashboard") },
                 actions = {
+                    IconButton(
+                        onClick = onShowSearch
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search City"
+                        )
+                    }
                     IconButton(
                         onClick = onRefresh,
                         enabled = !uiState.isRefreshing && !uiState.isLoading
@@ -112,6 +124,15 @@ fun WeatherScreen(
         NetworkDialog(
             onDismiss = onDismissNetworkDialog,
             onRetry = onCheckNetwork
+        )
+    }
+
+    // Search Screen
+    if (uiState.showSearchScreen) {
+        CitySearchScreen(
+            onBackClick = onHideSearch,
+            onCitySelected = onCitySelected,
+            searchCities = searchCities
         )
     }
 }

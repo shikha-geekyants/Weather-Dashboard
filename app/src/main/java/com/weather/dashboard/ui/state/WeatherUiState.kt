@@ -10,7 +10,8 @@ data class WeatherUiState(
     val error: WeatherError? = null,
     val lastUpdated: Long? = null,
     val isNetworkAvailable: Boolean = true,
-    val showNetworkDialog: Boolean = false
+    val showNetworkDialog: Boolean = false,
+    val showSearchScreen: Boolean = false
 ) {
     val hasError: Boolean get() = error != null
     val hasData: Boolean get() = weatherData != null && !isLoading && !isRefreshing

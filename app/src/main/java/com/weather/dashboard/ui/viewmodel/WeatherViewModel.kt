@@ -108,6 +108,31 @@ class WeatherViewModel @Inject constructor(
         }
     }
 
+    fun showSearchScreen() {
+        _uiState.update { it.copy(showSearchScreen = true) }
+    }
+
+    fun hideSearchScreen() {
+        _uiState.update { it.copy(showSearchScreen = false) }
+    }
+
+    suspend fun searchCities(query: String): List<com.weather.dashboard.domain.model.WeatherData> {
+        if (query.length < 2) return emptyList()
+        if (!networkMonitor.checkCurrentConnectivity()) return emptyList()
+
+        return try {
+            // Try to get weather for the city to verify it exists and get weather data
+            val result = weatherRepository.getWeather(query)
+            if (result.isSuccess) {
+                result.getOrNull()?.let { listOf(it) } ?: emptyList()
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
     private fun loadWeather(city: String, isManualRefresh: Boolean = false) {
         // Check network before making API call
         if (!networkMonitor.checkCurrentConnectivity()) {
