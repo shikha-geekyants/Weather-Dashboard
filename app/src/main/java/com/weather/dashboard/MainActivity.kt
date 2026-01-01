@@ -37,7 +37,9 @@ class MainActivity : ComponentActivity() {
                         currentCity = currentCity.value,
                         onCitySelected = { viewModel.selectCity(it) },
                         onRefresh = { viewModel.refreshWeather() },
-                        onRetry = { viewModel.retry() }
+                        onRetry = { viewModel.retry() },
+                        onDismissNetworkDialog = { viewModel.dismissNetworkDialog() },
+                        onCheckNetwork = { viewModel.checkNetworkAndRetry() }
                     )
                 }
             }

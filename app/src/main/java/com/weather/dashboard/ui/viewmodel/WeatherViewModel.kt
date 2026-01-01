@@ -5,19 +5,24 @@ import androidx.lifecycle.viewModelScope
 import com.weather.dashboard.data.repository.WeatherRepository
 import com.weather.dashboard.domain.model.WeatherError
 import com.weather.dashboard.ui.state.WeatherUiState
+import com.weather.dashboard.util.NetworkMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class WeatherViewModel @Inject constructor(
-    private val weatherRepository: WeatherRepository
+    private val weatherRepository: WeatherRepository,
+    private val networkMonitor: NetworkMonitor
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WeatherUiState())
@@ -35,8 +40,28 @@ class WeatherViewModel @Inject constructor(
     }
 
     init {
-        loadWeather(_currentCity.value)
-        startAutoRefresh()
+        // Monitor network connectivity
+        networkMonitor.isConnected
+            .onEach { isConnected ->
+                _uiState.update { it.copy(isNetworkAvailable = isConnected) }
+                if (!isConnected) {
+                    _uiState.update { it.copy(showNetworkDialog = true) }
+                }
+            }
+            .catch { }
+            .launchIn(viewModelScope)
+
+        // Check initial network state
+        val initialNetworkState = networkMonitor.checkCurrentConnectivity()
+        _uiState.update { it.copy(isNetworkAvailable = initialNetworkState) }
+        if (!initialNetworkState) {
+            _uiState.update { it.copy(showNetworkDialog = true) }
+        }
+
+        if (initialNetworkState) {
+            loadWeather(_currentCity.value)
+            startAutoRefresh()
+        }
     }
 
     fun selectCity(city: String) {
@@ -49,17 +74,54 @@ class WeatherViewModel @Inject constructor(
     }
 
     fun refreshWeather() {
+        if (!_uiState.value.isNetworkAvailable) {
+            _uiState.update { it.copy(showNetworkDialog = true) }
+            return
+        }
         if (!_uiState.value.isRefreshing && !_uiState.value.isLoading) {
             loadWeather(_currentCity.value, isManualRefresh = true)
         }
     }
 
     fun retry() {
+        if (!_uiState.value.isNetworkAvailable) {
+            _uiState.update { it.copy(showNetworkDialog = true) }
+            return
+        }
         _uiState.update { it.copy(error = null) }
         loadWeather(_currentCity.value)
     }
 
+    fun dismissNetworkDialog() {
+        _uiState.update { it.copy(showNetworkDialog = false) }
+    }
+
+    fun checkNetworkAndRetry() {
+        if (networkMonitor.checkCurrentConnectivity()) {
+            _uiState.update { it.copy(showNetworkDialog = false, isNetworkAvailable = true) }
+            loadWeather(_currentCity.value)
+            if (!isAutoRefreshActive) {
+                startAutoRefresh()
+            }
+        } else {
+            _uiState.update { it.copy(showNetworkDialog = true) }
+        }
+    }
+
     private fun loadWeather(city: String, isManualRefresh: Boolean = false) {
+        // Check network before making API call
+        if (!networkMonitor.checkCurrentConnectivity()) {
+            _uiState.update { 
+                it.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    showNetworkDialog = true,
+                    isNetworkAvailable = false
+                )
+            }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { state ->
                 state.copy(
@@ -77,11 +139,17 @@ class WeatherViewModel @Inject constructor(
                             isLoading = false,
                             isRefreshing = false,
                             error = null,
-                            lastUpdated = System.currentTimeMillis()
+                            lastUpdated = System.currentTimeMillis(),
+                            isNetworkAvailable = true
                         )
                     }
                 }
                 .onFailure { error ->
+                    val isNetworkError = error is WeatherError.NetworkError && 
+                        (error.message?.contains("internet", ignoreCase = true) == true ||
+                         error.message?.contains("connection", ignoreCase = true) == true ||
+                         error.cause is java.net.UnknownHostException)
+                    
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -89,7 +157,9 @@ class WeatherViewModel @Inject constructor(
                             error = if (error is WeatherError) error else WeatherError.UnknownError(
                                 error.message ?: "Unknown error occurred",
                                 error
-                            )
+                            ),
+                            showNetworkDialog = isNetworkError,
+                            isNetworkAvailable = !isNetworkError
                         )
                     }
                 }

@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.weather.dashboard.domain.model.WeatherData
 import com.weather.dashboard.ui.components.CityTabs
+import com.weather.dashboard.ui.components.NetworkDialog
 import com.weather.dashboard.ui.components.WeatherCard
 import com.weather.dashboard.ui.components.WeatherErrorView
 import com.weather.dashboard.ui.components.WeatherLoadingView
@@ -30,6 +31,8 @@ fun WeatherScreen(
     onCitySelected: (String) -> Unit,
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
+    onDismissNetworkDialog: () -> Unit,
+    onCheckNetwork: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -102,6 +105,14 @@ fun WeatherScreen(
                 }
             }
         }
+    }
+
+    // Network Dialog
+    if (uiState.showNetworkDialog) {
+        NetworkDialog(
+            onDismiss = onDismissNetworkDialog,
+            onRetry = onCheckNetwork
+        )
     }
 }
 
