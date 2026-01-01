@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Weather Dashboard</string>
+    <string name="temperature">Temperature</string>
+    <string name="humidity">Humidity</string>
+    <string name="wind_speed">Wind Speed</string>
+    <string name="last_updated">Last Updated</string>
+    <string name="refresh">Refresh</string>
+    <string name="error_loading_weather">Error loading weather data</string>
+    <string name="retry">Retry</string>
+    <string name="refreshing">Refreshing…</string>
+    <string name="no_data">No weather data available</string>
+</resources>
+
