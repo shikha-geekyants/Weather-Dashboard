@@ -43,7 +43,7 @@ fun CitySearchScreen(
             return@LaunchedEffect
         }
 
-        delay(500) // Wait 500ms after user stops typing
+        delay(1000) // Wait 1 second after user stops typing to avoid too frequent API calls
         isSearching = true
         searchError = null
 
