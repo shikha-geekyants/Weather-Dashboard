@@ -7,6 +7,7 @@ import com.weather.dashboard.domain.model.LoadingType
 import com.weather.dashboard.domain.model.State
 import com.weather.dashboard.domain.model.WeatherError
 import com.weather.dashboard.ui.state.WeatherUiState
+import com.weather.dashboard.util.ConnectionType
 import com.weather.dashboard.util.NetworkMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -40,15 +41,28 @@ class WeatherViewModel @Inject constructor(
 
     companion object {
         const val AUTO_REFRESH_INTERVAL_MS = 30_000L // 30 seconds
-        val DEFAULT_CITIES = listOf("London", "New York", "Tokyo")
+        val DEFAULT_CITIES = listOf("London", "New York", "Tokyo") // add in consts file
     }
 
     init {
         // Monitor network connectivity
         networkMonitor.isConnected
             .onEach { isConnected ->
-                _uiState.update { it.copy(isNetworkAvailable = isConnected) }
-                if (!isConnected) {
+                val connectionType = networkMonitor.getConnectionType()
+                val isSlowConnection = connectionType == ConnectionType.MOBILE || 
+                                       connectionType == ConnectionType.UNKNOWN
+                val isNoConnection = connectionType == ConnectionType.NONE
+                
+                _uiState.update { 
+                    it.copy(
+                        isNetworkAvailable = isConnected,
+                        connectionType = connectionType
+                    ) 
+                }
+                
+                // Show dialog for slow connection (when network is available but slow)
+                // or no connection
+                if (isNoConnection || !isConnected || (isSlowConnection && isConnected)) {
                     _uiState.update { it.copy(showNetworkDialog = true) }
                 }
             }
@@ -57,8 +71,21 @@ class WeatherViewModel @Inject constructor(
 
         // Check initial network state
         val initialNetworkState = networkMonitor.checkCurrentConnectivity()
-        _uiState.update { it.copy(isNetworkAvailable = initialNetworkState) }
-        if (!initialNetworkState) {
+        val initialConnectionType = networkMonitor.getConnectionType()
+        val isInitialSlowConnection = initialConnectionType == ConnectionType.MOBILE || 
+                                     initialConnectionType == ConnectionType.UNKNOWN
+        val isInitialNoConnection = initialConnectionType == ConnectionType.NONE
+        
+        _uiState.update { 
+            it.copy(
+                isNetworkAvailable = initialNetworkState,
+                connectionType = initialConnectionType
+            ) 
+        }
+        
+        // Show dialog if no connection or slow connection (when network is available)
+        if (!initialNetworkState || isInitialNoConnection || 
+            (isInitialSlowConnection && initialNetworkState)) {
             _uiState.update { it.copy(showNetworkDialog = true) }
         }
 
@@ -78,11 +105,12 @@ class WeatherViewModel @Inject constructor(
     }
 
     fun refreshWeather() {
-        if (!_uiState.value.isNetworkAvailable) {
+        val currentState = _uiState.value
+        if (!currentState.isNetworkAvailable || currentState.isSlowConnection) {
             _uiState.update { it.copy(showNetworkDialog = true) }
             return
         }
-        if (!_uiState.value.isRefreshing && !_uiState.value.isLoading) {
+        if (!currentState.isRefreshing && !currentState.isLoading) {
             loadWeather(_currentCity.value, isManualRefresh = true)
         }
     }
@@ -101,14 +129,30 @@ class WeatherViewModel @Inject constructor(
     }
 
     fun checkNetworkAndRetry() {
-        if (networkMonitor.checkCurrentConnectivity()) {
-            _uiState.update { it.copy(showNetworkDialog = false, isNetworkAvailable = true) }
+        val isConnected = networkMonitor.checkCurrentConnectivity()
+        val connectionType = networkMonitor.getConnectionType()
+        val isSlowConnection = connectionType == ConnectionType.MOBILE || 
+                               connectionType == ConnectionType.UNKNOWN
+        
+        if (isConnected && !isSlowConnection) {
+            _uiState.update { 
+                it.copy(
+                    showNetworkDialog = false, 
+                    isNetworkAvailable = true,
+                    connectionType = connectionType
+                ) 
+            }
             loadWeather(_currentCity.value)
             if (!isAutoRefreshActive) {
                 startAutoRefresh()
             }
         } else {
-            _uiState.update { it.copy(showNetworkDialog = true) }
+            _uiState.update { 
+                it.copy(
+                    showNetworkDialog = true,
+                    connectionType = connectionType
+                ) 
+            }
         }
     }
 
@@ -124,7 +168,7 @@ class WeatherViewModel @Inject constructor(
         if (query.length < 2) return Result.success(emptyList())
         if (!networkMonitor.checkCurrentConnectivity()) {
             return Result.failure(
-                WeatherError.NetworkError("No internet connection available")
+                WeatherError.NetworkError("No internet connection available") // add strings in strings file
             )
         }
 
@@ -150,7 +194,7 @@ class WeatherViewModel @Inject constructor(
         } catch (e: Exception) {
             Result.failure(
                 WeatherError.NetworkError(
-                    message = e.message ?: "Error searching for city",
+                    message = e.message ?: "Error searching for city",// add strings in strings file
                     cause = e
                 )
             )
@@ -159,16 +203,33 @@ class WeatherViewModel @Inject constructor(
 
     private fun loadWeather(city: String, isManualRefresh: Boolean = false) {
         // Check network before making API call
-        if (!networkMonitor.checkCurrentConnectivity()) {
+        val isConnected = networkMonitor.checkCurrentConnectivity()
+        val connectionType = networkMonitor.getConnectionType()
+        val isSlowConnection = (connectionType == ConnectionType.MOBILE || 
+                               connectionType == ConnectionType.UNKNOWN) && isConnected
+        
+        // If no connection, show dialog and don't proceed
+        if (!isConnected) {
             _uiState.update { 
                 it.copy(
                     isLoading = false,
                     isRefreshing = false,
                     showNetworkDialog = true,
-                    isNetworkAvailable = false
+                    isNetworkAvailable = false,
+                    connectionType = connectionType
                 )
             }
             return
+        }
+        
+        // If slow connection, show dialog but still proceed (warn user)
+        if (isSlowConnection) {
+            _uiState.update { 
+                it.copy(
+                    showNetworkDialog = true,
+                    connectionType = connectionType
+                )
+            }
         }
 
         viewModelScope.launch {

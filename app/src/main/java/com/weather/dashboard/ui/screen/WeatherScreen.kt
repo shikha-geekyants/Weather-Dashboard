@@ -124,6 +124,8 @@ fun WeatherScreen(
     // Network Dialog
     if (uiState.showNetworkDialog) {
         NetworkDialog(
+            connectionType = uiState.connectionType,
+            isNetworkAvailable = uiState.isNetworkAvailable,
             onDismiss = onDismissNetworkDialog,
             onRetry = onCheckNetwork
         )

@@ -10,6 +10,7 @@ data class WeatherData(
     val lastUpdated: Long
 )
 
+// remove unused functions
 sealed class WeatherError(message: String, cause: Throwable? = null) : Exception(message, cause) {
     class NetworkError(message: String, cause: Throwable? = null) : WeatherError(message, cause)
     class UnknownError(message: String, cause: Throwable? = null) : WeatherError(message, cause)

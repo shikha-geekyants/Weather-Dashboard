@@ -9,7 +9,6 @@ sealed class State<out T> {
 
 enum class LoadingType {
     LOADER,
-    REFRESH,
-    PAGINATION
+    REFRESH
 }
 

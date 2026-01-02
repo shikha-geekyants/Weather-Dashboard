@@ -8,20 +8,43 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.weather.dashboard.R
+import com.weather.dashboard.util.ConnectionType
 
 @Composable
 fun NetworkDialog(
+    connectionType: ConnectionType,
+    isNetworkAvailable: Boolean,
     onDismiss: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isNoConnection = connectionType == ConnectionType.NONE || !isNetworkAvailable
+    val isSlowConnection = (connectionType == ConnectionType.MOBILE || 
+                           connectionType == ConnectionType.UNKNOWN) && isNetworkAvailable
+    
+    val title = if (isNoConnection) {
+        stringResource(R.string.no_internet_connection)
+    } else if (isSlowConnection) {
+        stringResource(R.string.slow_network_connection)
+    } else {
+        stringResource(R.string.no_internet_connection)
+    }
+    
+    val message = if (isNoConnection) {
+        stringResource(R.string.check_internet_connection)
+    } else if (isSlowConnection) {
+        stringResource(R.string.slow_network_message)
+    } else {
+        stringResource(R.string.check_internet_connection)
+    }
+    
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(stringResource(R.string.no_internet_connection))
+            Text(title)
         },
         text = {
-            Text(stringResource(R.string.check_internet_connection))
+            Text(message)
         },
         confirmButton = {
             Button(onClick = onRetry) {
