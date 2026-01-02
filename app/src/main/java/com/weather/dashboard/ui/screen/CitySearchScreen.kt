@@ -37,14 +37,12 @@ fun CitySearchScreen(
     var isSearching by remember { mutableStateOf(false) }
     var searchErrorType by remember { mutableStateOf<SearchErrorType?>(null) }
 
-    // Format error message in composable context
     val searchError = when (val error = searchErrorType) {
         is SearchErrorType.NoCitiesFound -> stringResource(R.string.no_cities_found, error.query)
         is SearchErrorType.SearchError -> stringResource(R.string.error_searching, error.message)
         null -> null
     }
 
-    // Debounce search
     LaunchedEffect(searchQuery) {
         if (searchQuery.isBlank()) {
             searchResults = emptyList()
@@ -57,7 +55,7 @@ fun CitySearchScreen(
             return@LaunchedEffect
         }
 
-        delay(1000) // Wait 1 second after user stops typing to avoid too frequent API calls
+        delay(1000)
         isSearching = true
         searchErrorType = null
 

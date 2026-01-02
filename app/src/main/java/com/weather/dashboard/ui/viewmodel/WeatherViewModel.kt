@@ -40,8 +40,8 @@ class WeatherViewModel @Inject constructor(
     private var isAutoRefreshActive = false
 
     companion object {
-        const val AUTO_REFRESH_INTERVAL_MS = 30_000L // 30 seconds
-        val DEFAULT_CITIES = listOf("London", "New York", "Tokyo") // add in consts file
+        const val AUTO_REFRESH_INTERVAL_MS = 30_000L
+        val DEFAULT_CITIES = listOf("London", "New York", "Tokyo")
     }
 
     init {
@@ -59,9 +59,7 @@ class WeatherViewModel @Inject constructor(
                         connectionType = connectionType
                     ) 
                 }
-                
-                // Show dialog for slow connection (when network is available but slow)
-                // or no connection
+
                 if (isNoConnection || !isConnected || (isSlowConnection && isConnected)) {
                     _uiState.update { it.copy(showNetworkDialog = true) }
                 }
@@ -69,7 +67,7 @@ class WeatherViewModel @Inject constructor(
             .catch { }
             .launchIn(viewModelScope)
 
-        // Check initial network state
+
         val initialNetworkStatus = networkMonitor.getNetworkStatus()
         val isInitialSlowConnection = initialNetworkStatus.connectionType == ConnectionType.MOBILE || 
                                      initialNetworkStatus.connectionType == ConnectionType.UNKNOWN
@@ -82,8 +80,7 @@ class WeatherViewModel @Inject constructor(
             ) 
         }
         
-        // Show dialog if no connection or slow connection (when network is available)
-        if (!initialNetworkStatus.isConnected || isInitialNoConnection || 
+        if (!initialNetworkStatus.isConnected || isInitialNoConnection ||
             (isInitialSlowConnection && initialNetworkStatus.isConnected)) {
             _uiState.update { it.copy(showNetworkDialog = true) }
         }
@@ -166,12 +163,11 @@ class WeatherViewModel @Inject constructor(
         if (query.length < 2) return Result.success(emptyList())
         if (!networkMonitor.checkCurrentConnectivity()) {
             return Result.failure(
-                WeatherError.NetworkError("No internet connection available") // add strings in strings file
+                WeatherError.NetworkError("No internet connection available")
             )
         }
 
         return try {
-            // Try to get weather for the city to verify it exists and get weather data
             val state = weatherRepository.getWeather(query)
                 .first { it is State.Success || it is State.Error }
             
@@ -192,7 +188,7 @@ class WeatherViewModel @Inject constructor(
         } catch (e: Exception) {
             Result.failure(
                 WeatherError.NetworkError(
-                    message = e.message ?: "Error searching for city",// add strings in strings file
+                    message = e.message ?: "Error searching for city",
                     cause = e
                 )
             )
@@ -200,12 +196,10 @@ class WeatherViewModel @Inject constructor(
     }
 
     private fun loadWeather(city: String, isManualRefresh: Boolean = false) {
-        // Check network before making API call
         val networkStatus = networkMonitor.getNetworkStatus()
         val isSlowConnection = (networkStatus.connectionType == ConnectionType.MOBILE || 
                                networkStatus.connectionType == ConnectionType.UNKNOWN) && networkStatus.isConnected
         
-        // If no connection, show dialog and don't proceed
         if (!networkStatus.isConnected) {
             _uiState.update { 
                 it.copy(
@@ -219,7 +213,6 @@ class WeatherViewModel @Inject constructor(
             return
         }
         
-        // If slow connection, show dialog but still proceed (warn user)
         if (isSlowConnection) {
             _uiState.update { 
                 it.copy(
@@ -284,7 +277,6 @@ class WeatherViewModel @Inject constructor(
                         }
                     }
                     is State.Idle -> {
-                        // Idle state - no action needed
                     }
                 }
             }

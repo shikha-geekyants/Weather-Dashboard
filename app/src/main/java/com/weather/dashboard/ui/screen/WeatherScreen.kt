@@ -79,7 +79,6 @@ fun WeatherScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // City Selection Tabs
             CityTabs(
                 cities = cities,
                 selectedCity = currentCity,
@@ -87,7 +86,6 @@ fun WeatherScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Content
             when {
                 uiState.isLoading && uiState.weatherData == null -> {
                     WeatherLoadingView(modifier = Modifier.fillMaxSize())
@@ -121,7 +119,6 @@ fun WeatherScreen(
         }
     }
 
-    // Network Dialog
     if (uiState.showNetworkDialog) {
         NetworkDialog(
             connectionType = uiState.connectionType,
@@ -130,8 +127,6 @@ fun WeatherScreen(
             onRetry = onCheckNetwork
         )
     }
-
-    // Search Screen
     if (uiState.showSearchScreen) {
         CitySearchScreen(
             onBackClick = onHideSearch,
@@ -155,7 +150,7 @@ fun WeatherContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Refreshing indicator
+
         if (isRefreshing) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -175,7 +170,6 @@ fun WeatherContent(
             }
         }
 
-        // City Name
         Text(
             text = weatherData.cityName,
             style = MaterialTheme.typography.headlineLarge,
@@ -183,10 +177,8 @@ fun WeatherContent(
             textAlign = TextAlign.Center
         )
 
-        // Weather Card
         WeatherCard(weatherData = weatherData)
 
-        // Last Updated
         lastUpdated?.let {
             Text(
                 text = "${stringResource(R.string.last_updated)}: ${formatTimestamp(it)}",

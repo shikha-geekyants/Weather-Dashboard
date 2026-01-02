@@ -15,7 +15,6 @@ class WeatherRepository @Inject constructor(
     private val apiKey: String
 ) {
     companion object {
-        // create a consts file and add all the constants there
         private const val API_CONSTANT_GET_WEATHER = "GET_WEATHER"
     }
 
@@ -26,8 +25,6 @@ class WeatherRepository @Inject constructor(
     }.catch { e ->
         val (message, code) = when (e) {
             is retrofit2.HttpException -> {
-                // add static string in string.xml for this
-
                 val errorMessage = when (e.code()) {
                     401 -> "Invalid API key. Please verify your OpenWeatherMap API key is correct and activated. New keys may take up to 2 hours to activate."
                     404 -> "City not found. Please check the city name."
