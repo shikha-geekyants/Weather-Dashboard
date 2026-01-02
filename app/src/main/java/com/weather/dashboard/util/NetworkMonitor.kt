@@ -85,6 +85,31 @@ class NetworkMonitor @Inject constructor(
             else -> ConnectionType.UNKNOWN
         }
     }
+
+
+    data class NetworkStatus(
+        val isConnected: Boolean,
+        val connectionType: ConnectionType
+    )
+
+    fun getNetworkStatus(): NetworkStatus {
+        val isConnected = checkCurrentConnectivity()
+        if (!isConnected) {
+            return NetworkStatus(false, ConnectionType.NONE)
+        }
+
+        val network = connectivityManager.activeNetwork ?: return NetworkStatus(false, ConnectionType.NONE)
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return NetworkStatus(false, ConnectionType.NONE)
+
+        val connectionType = when {
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> ConnectionType.WIFI
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> ConnectionType.MOBILE
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> ConnectionType.ETHERNET
+            else -> ConnectionType.UNKNOWN
+        }
+
+        return NetworkStatus(true, connectionType)
+    }
 }
 
 enum class ConnectionType {

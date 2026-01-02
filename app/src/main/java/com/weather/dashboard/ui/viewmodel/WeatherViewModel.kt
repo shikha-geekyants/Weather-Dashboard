@@ -70,26 +70,25 @@ class WeatherViewModel @Inject constructor(
             .launchIn(viewModelScope)
 
         // Check initial network state
-        val initialNetworkState = networkMonitor.checkCurrentConnectivity()
-        val initialConnectionType = networkMonitor.getConnectionType()
-        val isInitialSlowConnection = initialConnectionType == ConnectionType.MOBILE || 
-                                     initialConnectionType == ConnectionType.UNKNOWN
-        val isInitialNoConnection = initialConnectionType == ConnectionType.NONE
+        val initialNetworkStatus = networkMonitor.getNetworkStatus()
+        val isInitialSlowConnection = initialNetworkStatus.connectionType == ConnectionType.MOBILE || 
+                                     initialNetworkStatus.connectionType == ConnectionType.UNKNOWN
+        val isInitialNoConnection = initialNetworkStatus.connectionType == ConnectionType.NONE
         
         _uiState.update { 
             it.copy(
-                isNetworkAvailable = initialNetworkState,
-                connectionType = initialConnectionType
+                isNetworkAvailable = initialNetworkStatus.isConnected,
+                connectionType = initialNetworkStatus.connectionType
             ) 
         }
         
         // Show dialog if no connection or slow connection (when network is available)
-        if (!initialNetworkState || isInitialNoConnection || 
-            (isInitialSlowConnection && initialNetworkState)) {
+        if (!initialNetworkStatus.isConnected || isInitialNoConnection || 
+            (isInitialSlowConnection && initialNetworkStatus.isConnected)) {
             _uiState.update { it.copy(showNetworkDialog = true) }
         }
 
-        if (initialNetworkState) {
+        if (initialNetworkStatus.isConnected) {
             loadWeather(_currentCity.value)
             startAutoRefresh()
         }
@@ -129,17 +128,16 @@ class WeatherViewModel @Inject constructor(
     }
 
     fun checkNetworkAndRetry() {
-        val isConnected = networkMonitor.checkCurrentConnectivity()
-        val connectionType = networkMonitor.getConnectionType()
-        val isSlowConnection = connectionType == ConnectionType.MOBILE || 
-                               connectionType == ConnectionType.UNKNOWN
+        val networkStatus = networkMonitor.getNetworkStatus()
+        val isSlowConnection = networkStatus.connectionType == ConnectionType.MOBILE || 
+                               networkStatus.connectionType == ConnectionType.UNKNOWN
         
-        if (isConnected && !isSlowConnection) {
+        if (networkStatus.isConnected && !isSlowConnection) {
             _uiState.update { 
                 it.copy(
                     showNetworkDialog = false, 
                     isNetworkAvailable = true,
-                    connectionType = connectionType
+                    connectionType = networkStatus.connectionType
                 ) 
             }
             loadWeather(_currentCity.value)
@@ -150,7 +148,7 @@ class WeatherViewModel @Inject constructor(
             _uiState.update { 
                 it.copy(
                     showNetworkDialog = true,
-                    connectionType = connectionType
+                    connectionType = networkStatus.connectionType
                 ) 
             }
         }
@@ -203,20 +201,19 @@ class WeatherViewModel @Inject constructor(
 
     private fun loadWeather(city: String, isManualRefresh: Boolean = false) {
         // Check network before making API call
-        val isConnected = networkMonitor.checkCurrentConnectivity()
-        val connectionType = networkMonitor.getConnectionType()
-        val isSlowConnection = (connectionType == ConnectionType.MOBILE || 
-                               connectionType == ConnectionType.UNKNOWN) && isConnected
+        val networkStatus = networkMonitor.getNetworkStatus()
+        val isSlowConnection = (networkStatus.connectionType == ConnectionType.MOBILE || 
+                               networkStatus.connectionType == ConnectionType.UNKNOWN) && networkStatus.isConnected
         
         // If no connection, show dialog and don't proceed
-        if (!isConnected) {
+        if (!networkStatus.isConnected) {
             _uiState.update { 
                 it.copy(
                     isLoading = false,
                     isRefreshing = false,
                     showNetworkDialog = true,
                     isNetworkAvailable = false,
-                    connectionType = connectionType
+                    connectionType = networkStatus.connectionType
                 )
             }
             return
@@ -227,7 +224,7 @@ class WeatherViewModel @Inject constructor(
             _uiState.update { 
                 it.copy(
                     showNetworkDialog = true,
-                    connectionType = connectionType
+                    connectionType = networkStatus.connectionType
                 )
             }
         }
